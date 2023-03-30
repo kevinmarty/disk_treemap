@@ -77,6 +77,7 @@ optional arguments:
   --everything          use Everything by voidtools to speedup scanning. The
                         result will be absolute path. Everything must be
                         running and only x64 version is supported.
+  --archive             treat a single path as an archive and scan the contents.
 ```
 
 You may also use the module directly: `python -m disk_treemap.main`. Same arguments apply.
@@ -129,6 +130,12 @@ safe!
 1. Install disk_treemap via pip: `pip install disk_treemap`
 
 1. Just do analyze as your phone is an ordinary computer.
+
+**Analyze the contents of a ZIP file**
+
+1. Run `disk-treemap --archive <path_to_zip_file>`
+   
+1. After `listening 127.0.0.1:8000` appears, open browser and navigate to http://127.0.0.1:8000 .
 
 # TODO
 

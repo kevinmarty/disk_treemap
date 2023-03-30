@@ -43,24 +43,29 @@ def start_server(size_tree_file_path, host, port, compression):
 
 def scan_paths(root_paths, size_tree_file_path, args):
     all_size_tree = {}
-    for root_path in root_paths:
-        if root_path.startswith('s3://'):
-            if root_path.endswith('/'):
-                root_path = root_path[:-1]
-            from .scan_s3 import scan_size_tree
-            size_tree = scan_size_tree(root_path, args.endpoint_url)
-        else:
-            root_path = str(Path(root_path))
-            if args.everything:
-                from .scan_everything import scan_size_tree
-                size_tree = scan_size_tree(root_path)
-                if not size_tree:
+    if args.archive and len(root_paths) == 1 and os.path.isfile(root_paths[0]):
+        # Treat a single path as an archive and scan the contents
+        from .scan_archive import scan_size_tree
+        all_size_tree = scan_size_tree(root_paths[0])
+    else:
+        for root_path in root_paths:
+            if root_path.startswith('s3://'):
+                if root_path.endswith('/'):
+                    root_path = root_path[:-1]
+                from .scan_s3 import scan_size_tree
+                size_tree = scan_size_tree(root_path, args.endpoint_url)
+            else:
+                root_path = str(Path(root_path))
+                if args.everything:
+                    from .scan_everything import scan_size_tree
+                    size_tree = scan_size_tree(root_path)
+                    if not size_tree:
+                        from .scan_fs import scan_size_tree
+                        size_tree = scan_size_tree(root_path, args.follow_links, args.follow_mounts)
+                else:
                     from .scan_fs import scan_size_tree
                     size_tree = scan_size_tree(root_path, args.follow_links, args.follow_mounts)
-            else:
-                from .scan_fs import scan_size_tree
-                size_tree = scan_size_tree(root_path, args.follow_links, args.follow_mounts)
-        all_size_tree.update(size_tree)
+            all_size_tree.update(size_tree)
     with open(size_tree_file_path, 'w') as f:
         json.dump(all_size_tree, f)
     print('scanning complete.')
@@ -92,6 +97,8 @@ def main():
     parser.add_argument('--everything', action='store_true',
                         help='use Everything by voidtools to speedup scanning. The result will be absolute path. '
                              'Everything must be running and only x64 version is supported.')
+    parser.add_argument('--archive', action='store_true',
+                        help="treat a single path as an archive and scan the contents.")
     # parser.add_argument('--mlocate', nargs='?', const=True, default=False,
     #                     help='use mlocate to speedup scanning. you may specify location of mlocate.db file')
     args = parser.parse_args()
